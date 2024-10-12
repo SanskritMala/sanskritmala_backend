@@ -140,7 +140,7 @@ export const createBook = async (req, res) => {
       return res.status(400).json({ message: "Cover image is required." });
     }
 
-    // Access the cover image file path or secure_url (from Cloudinary)
+    // Use secure_url from Cloudinary response for the cover image
     const coverImagePath = req.files.coverImage[0].path || req.files.coverImage[0].secure_url;
 
     // Create the Book document in the database with the Cloudinary URL for the cover image
@@ -149,7 +149,7 @@ export const createBook = async (req, res) => {
       author,
       price,
       description,
-      coverImage: coverImagePath, // Assign the Cloudinary URL or path for the cover image
+      coverImage: coverImagePath, // Assign the Cloudinary URL for the cover image
     });
 
     // Save the new book document
@@ -161,7 +161,8 @@ export const createBook = async (req, res) => {
     console.error("Error in createBook:", error); // Log the error
     res.status(400).json({ message: "Error creating book", error: error.message });
   }
-};;
+};
+
 
 export const deleteBook=async(req,res)=>{
     try{

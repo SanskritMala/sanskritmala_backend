@@ -1,4 +1,4 @@
-import {  cloudinary } from 'cloudinary';
+import   cloudinary from 'cloudinary';
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary'; // Import CloudinaryStorage
 

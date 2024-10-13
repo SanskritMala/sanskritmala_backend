@@ -103,32 +103,43 @@ export const deleteLecture = async (req, res) => {
   }
 };
 
-const unlinkAsync = promisify(fs.unlink);
+
+
+
 export const deleteCourse = async (req, res) => {
+  console.log("Received ID:", req.params.id); // Log received ID
+
   try {
     const course = await Courses.findById(req.params.id);
-    
-    if (!course) return res.status(404).json({
-      message: "Course not found"
-    });
+    console.log("Found Course:", course); // Log found course
 
-    await Lecture.deleteMany({ course: course._id });
-    rm(course.image, () => {
-      console.log("Course thumbnail image deleted");
-    });
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
 
-    await course.deleteOne();
-    await User.updateMany({}, { $pull: { subscription: req.params.id } });
-    
-    res.status(200).json({
-      message: "Course deleted successfully"
-    });
+    // Delete all lectures associated with the course
+    const deleteLectures = await Lecture.deleteMany({ course: course._id });
+    console.log("Deleted Lectures Count:", deleteLectures.deletedCount); // Log deleted lectures count
+
+    // Delete the course
+    await course.deleteOne(); // Ensure this line executes without error
+
+    // Remove course from all users' subscriptions
+    const updateUsers = await User.updateMany({}, { $pull: { subscription: req.params.id } });
+    console.log("Updated Users Count:", updateUsers.modifiedCount); // Log users updated count
+
+    res.status(200).json({ message: "Course deleted successfully" });
   } catch (error) {
-    res.status(500).json({
-      message: error.message
-    });
+    console.error("Error deleting course:", error); // Log the error
+    res.status(500).json({ message: error.message });
   }
 };
+
+
+
+
+
+
 
 
 export const createBook = async (req, res) => {

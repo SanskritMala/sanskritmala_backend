@@ -257,34 +257,66 @@ export const updateRole = TryCatch(async (req, res) => {
     }
   });
 
-  export const updateBook = async (req, res) => {
-    const { title, author, price, description } = req.body;
-    const { id } = req.params;
-    
-    try {
-      const book = await Book.findById(id);
-      if (!book) {
-        return res.status(404).json({ message: "Book not found" });
-      }
-      
-      // Update book details
-      book.title = title || book.title;
-      book.author = author || book.author;
-      book.price = price || book.price;
-      book.description = description || book.description;
+ 
+ // Assuming this is where your Book model is located
   
-      // Handle file upload 
-      if (req.file) {
-        book.image = req.file.path;
-      }
-  
-      await book.save();
-      
-      res.status(200).json({ message: "Book updated successfully", book });
-    } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
+ export const updateBook = async (req, res) => {
+  const { title, author, price, description } = req.body;
+  const { id } = req.params;
+
+  try {
+    // Find the book by ID
+    const book = await Book.findById(id);
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
     }
-  };
+
+    // Construct the updated book object
+    const updatedBookData = {
+      title: title || book.title,
+      author: author || book.author,
+      price: price || book.price,
+      description: description || book.description,
+    };
+
+    // Log the received data
+    console.log("Received data: ", { title, author, price, description });
+    console.log("File received: ", req.file);
+
+    // If a new cover image is uploaded, upload it to Cloudinary and update the image URL
+    if (req.file) {
+      try {
+        const imageResult = await cloudinary.v2.uploader.upload(req.file.path, {
+          folder: '/uploads',
+        });
+        updatedBookData.image = imageResult.secure_url;
+        console.log('Book image updated: ', updatedBookData.image);
+      } catch (error) {
+        console.error('Image upload error: ', error);
+        return res.status(500).json({ message: "Image upload failed" });
+      }
+    }
+
+    // Update the book in the database
+    const updatedBook = await Book.findByIdAndUpdate(id, updatedBookData, { new: true });
+
+    // If the book isn't updated, handle the error
+    if (!updatedBook) {
+      return res.status(500).json({ message: "Failed to update the book" });
+    }
+
+    // Return the updated book
+    res.status(200).json({ message: "Book updated successfully", book: updatedBook });
+
+    // Log the updated book
+    console.log('Book updated successfully: ', updatedBook);
+  } catch (error) {
+    console.error('Error updating the book: ', error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+  
 
 
 
@@ -516,44 +548,79 @@ export const deleteNote = async (req, res) => {
 
 
 
-// Function to update a note
-export const updateNote = TryCatch(async (req, res) => {
-    const { title, price, description } = req.body;
-    const noteId = req.params.id;
 
-    // Find the notes to update
-    const note = await Notes.findById(noteId);
+export const updateNote = async (req, res) => {
+  const { title, price, description } = req.body;
+  const { id } = req.params;
+
+  try {
+    // Find the note by ID
+    const note = await Notes.findById(id);
     if (!note) {
-        return res.status(404).json({ message: 'Note not found' });
+      return res.status(404).json({ message: "Note not found" });
     }
 
+    // Construct the updated note object
+    const updatedNoteData = {
+      title: title || note.title,
+      price: price || note.price,
+      description: description || note.description,
+    };
 
-    if (req.files.coverImage) {
-       
-        if (note.coverImage) {
-            await unlinkAsync(note.coverImage);
-        }
-        
-        note.coverImage = req.files.coverImage[0].path; 
+    // Log the received form data
+    console.log("Received data: ", { title, price, description });
+    console.log("Files received: ", req.files);
+
+    // If a new cover image is uploaded, update the cover image URL
+    if (req.files && req.files.coverImage && req.files.coverImage.length > 0) {
+      try {
+        const coverImageResult = await cloudinary.v2.uploader.upload(req.files.coverImage[0].path, {
+          folder: '/uploads',
+        });
+        updatedNoteData.coverImage = coverImageResult.secure_url;
+        console.log('Cover Image updated: ', updatedNoteData.coverImage);
+      } catch (error) {
+        console.error('Cover Image upload error: ', error);
+        return res.status(500).json({ message: "Cover Image upload failed" });
+      }
     }
 
-    if (req.files.notePdf) {
-        // If a new PDF is uploaded, delete the old one
-        if (note.notePdf) {
-            await unlinkAsync(note.notePdf);
-        }
-        
-        note.notePdf = req.files.notePdf[0].path; 
+    // If a new note PDF is uploaded, update the note PDF URL
+    if (req.files && req.files.notePdf && req.files.notePdf.length > 0) {
+      try {
+        const notePdfResult = await cloudinary.v2.uploader.upload(req.files.notePdf[0].path, {
+          folder: '/uploads',
+          resource_type: 'raw', // For non-image files like PDFs
+        });
+        updatedNoteData.notePdf = notePdfResult.secure_url;
+        console.log('Note PDF updated: ', updatedNoteData.notePdf);
+      } catch (error) {
+        console.error('Note PDF upload error: ', error);
+        return res.status(500).json({ message: "Note PDF upload failed" });
+      }
     }
 
-    // Update note details
-    note.title = title || note.title;
-    note.price = price || note.price;
-    note.description = description || note.description;
+    // Update the note in the database
+    const updatedNote = await Notes.findByIdAndUpdate(id, updatedNoteData, { new: true });
 
-    
-    await note.save();
+    // If the note isn't updated, handle the error
+    if (!updatedNote) {
+      return res.status(500).json({ message: "Failed to update the note" });
+    }
 
-    res.status(200).json({ message: 'Note updated successfully', note });
-});
+    // Return the updated note
+    res.status(200).json({ message: "Note updated successfully", note: updatedNote });
+
+    // Log the updated note
+    console.log('Note updated successfully: ', updatedNote);
+  } catch (error) {
+    console.error('Error updating the note: ', error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+
+
+
 

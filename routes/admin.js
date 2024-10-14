@@ -36,7 +36,7 @@ router.get("/users", isAuth, isAdmin, getAllUser);
 // Book routes
 router.post('/book/new', isAuth, isAdmin,uploadEbookFiles, createBook); // Removed uploadFiles middleware
 router.delete('/book/:id', isAuth, isAdmin, deleteBook);
-router.put('/book/:id', isAuth, isAdmin, updateBook); // Removed uploadFiles middleware
+router.put('/book/:id', isAuth, isAdmin,uploadEbookFiles, updateBook); // Removed uploadFiles middleware
 
 // Ebook routes
 router.post('/ebook/new', isAuth, isAdmin, uploadEbookFiles , createEbook); 
@@ -46,6 +46,6 @@ router.put('/ebook/:id', isAuth, isAdmin,uploadEbookFiles, updateEbook); // Remo
 // Notes routes
 router.post('/notes/new', isAuth, isAdmin,uploadNoteFiles, createNotes); // Removed uploadNoteFiles middleware
 router.delete('/notes/:id', isAuth, isAdmin, deleteNote);
-router.put('/notes/:id', isAuth, isAdmin, updateNote); // Removed uploadNoteFiles middleware
+router.put('/notes/:id', isAuth, isAdmin,uploadNoteFiles, updateNote); // Removed uploadNoteFiles middleware
 
 export default router;

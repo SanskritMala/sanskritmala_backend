@@ -86,30 +86,45 @@ export const getMyCourses = async (req, res) => {
     }
 };
 
-
 export const checkout = TryCatch(async (req, res) => {
     const user = await User.findById(req.user._id);
-  
     const course = await Courses.findById(req.params.id);
   
     if (user.subscription.includes(course._id)) {
-      return res.status(400).json({
-        message: "You already have this course",
-      });
+        return res.status(400).json({
+            message: "You already have this course",
+        });
+    }
+
+    if (course.price === 0) {
+        // Directly enroll user in the free course
+        user.subscription.push(course._id);
+        await Progress.create({
+            course: course._id,
+            completedLectures: [],
+            user: req.user._id,
+        });
+        await user.save();
+      
+        return res.status(200).json({
+            message: "Enrolled in free course successfully",
+            course,
+        });
     }
   
     const options = {
-      amount: Number(course.price * 100),
-      currency: "INR",
+        amount: Number(course.price * 100),
+        currency: "INR",
     };
   
     const order = await instance.orders.create(options);
   
     res.status(201).json({
-      order,
-      course,
+        order,
+        course,
     });
-  });
+});
+
   
   export const paymentVerification = TryCatch(async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
